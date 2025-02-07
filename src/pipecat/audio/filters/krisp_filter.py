@@ -75,7 +75,7 @@ class KrispFilter(BaseAudioFilter):
         if isinstance(frame, FilterEnableFrame):
             self._filtering = frame.enable
 
-    async def filter(self, audio: bytes) -> bytes:
+    def filter(self, audio: bytes) -> bytes:
         if not self._filtering:
             return audio
 

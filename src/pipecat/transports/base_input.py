@@ -10,6 +10,7 @@ from typing import Optional
 
 from loguru import logger
 
+from pipecat.audio.filters.krisp_filter import KrispFilter
 from pipecat.audio.vad.vad_analyzer import VADAnalyzer, VADState
 from pipecat.frames.frames import (
     BotInterruptionFrame,
@@ -190,7 +191,12 @@ class BaseInputTransport(FrameProcessor):
 
             # If an audio filter is available, run it before VAD.
             if self._params.audio_in_filter:
-                frame.audio = await self._params.audio_in_filter.filter(frame.audio)
+                if isinstance(self._params.audio_in_filter, KrispFilter):
+                    # Running KrispFilter in a separate thread to avoid blocking the main thread.
+                    frame.audio = await self.get_event_loop().run_in_executor(self._executor, self._params.audio_in_filter.filter, frame.audio)
+                else:
+                    # Running audio filter in the main thread.
+                    frame.audio = self._params.audio_in_filter.filter(frame.audio)
 
             # Check VAD and push event if necessary. We just care about
             # changes from QUIET to SPEAKING and vice versa.
